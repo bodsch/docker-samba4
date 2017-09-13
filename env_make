@@ -1,0 +1,12 @@
+PORTS = \
+  --publish 8080:8080 \
+  --publish 22222:22222
+
+VOLUMES = \
+  --volume /var/log/docker:/var/log \
+  --volume /tmp/docker-data/samba:/var/lib/samba
+
+ENV = \
+  --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
+  --env KERBEROS_PASSWORD="kur-z3rSh1t"
+
