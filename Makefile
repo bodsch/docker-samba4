@@ -46,6 +46,7 @@ run:
 	docker run \
 		--rm \
 		--name $(NAME)-$(INSTANCE) \
+		--privileged \
 		$(PORTS) \
 		$(VOLUMES) \
 		$(ENV) \

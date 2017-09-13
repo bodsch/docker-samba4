@@ -5,7 +5,7 @@ MAINTAINER Bodo Schulz <bodo@boone-schulz.de>
 
 ENV \
   ALPINE_MIRROR="mirror1.hs-esslingen.de/pub/Mirrors" \
-  ALPINE_VERSION="v3.6" \
+  ALPINE_VERSION="edge" \
   TERM=xterm \
   BUILD_DATE="2017-09-09" \
   VERSION=""
@@ -20,17 +20,18 @@ RUN \
   apk --no-cache update && \
   apk --no-cache upgrade && \
   apk --no-cache add \
+    bind \
     expect \
+    krb5 \
     krb5-server \
-    samba-dc && \
+    samba-dc \
+    supervisor && \
   mv /etc/samba/smb.conf /etc/samba/smb.conf-DIST && \
   mkdir -p /var/log/samba/cores
 
-#  find /var/lib/samba/ -type f -delete
-# RUN \
-#   rm -rf /var/cache/apk/*
+RUN \
+  rm -rf /var/cache/apk/*
 
 ADD rootfs/ /
 
-ENTRYPOINT ["/init/run.sh"]
-# CMD ["samba"]
+CMD ["/init/run.sh"]

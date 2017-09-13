@@ -1,164 +1,162 @@
 #!/bin/sh
-# Copyright 2017-TODAY LasLabs Inc.
-# License Apache 2.0 (https://www.apache.org/licenses/LICENSE-2.0.html).
 
-set -x
 set -e
+set -x
 
-fix() {
+# -------------------------------------------------------------------------------------------------
 
-LDAP_ALLOW_INSECURE=${LDAP_ALLOW_INSECURE:-false}
-SAMBA_REALM=${SAMBA_REALM:-SAMBA.LAN}
-
-# Populate $SAMBA_OPTIONS
-SAMBA_OPTIONS=${SAMBA_OPTIONS:-}
-
-HOSTNAME=${HOSTNAME:-"hostname -f"}
-
-[ -n "${SAMBA_DOMAIN}" ] \
-    && SAMBA_OPTIONS="${SAMBA_OPTIONS} --domain=$SAMBA_DOMAIN" \
-    || SAMBA_OPTIONS="${SAMBA_OPTIONS} --domain=${SAMBA_REALM%%.*}"
-
-[ -n "${SAMBA_HOST_IP}" ] && SAMBA_OPTIONS="${SAMBA_OPTIONS} --host-ip=${SAMBA_HOST_IP}"
-
-SETUP_LOCK_FILE="/var/lib/samba/private/.setup.lock.do.not.remove"
-
-. /init/setup.sh
-. /init/start.sh
-
-exit 0
-}
-
-# -----------------------------------------------------------
+HOSTNAME=$(hostname -f)
 
 SAMBA_DC_DOMAIN=${SAMBA_DC_DOMAIN:-smb}
 SAMBA_DC_REALM=${SAMBA_DC_REALM:-SAMBA.LAN}
 SAMBA_DC_DNS_BACKEND=${SAMBA_DC_DNS_BACKEND:-SAMBA_INTERNAL}
+
+SAMBA_DC_DNS_BACKEND=BIND9_FLATFILE
+
 SAMBA_OPTIONS=${SAMBA_OPTIONS:-}
+
 [ -n "${SAMBA_HOST_IP}" ] && SAMBA_OPTIONS="${SAMBA_OPTIONS} --host-ip=${SAMBA_HOST_IP}"
 
-SETUP_LOCK_FILE="/var/lib/samba/private/.setup.lock.do.not.remove"
+SETUP_LOCK_FILE="/srv/etc/.setup.lock.do.not.remove"
 
 pass=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c20; echo)
 
 SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-${pass}}
 KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-${pass}}
-# SAMBA_DC_ADMIN_PASSWD="${pass}"
-# KERBEROS_PASSWORD="${pass}"
 
-echo "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
-echo "Kerberos password set to: $KERBEROS_PASSWORD"
+# echo "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
+# echo "Kerberos password set to: $KERBEROS_PASSWORD"
 
 # we need the export for kdb5_util
 export KERBEROS_PASSWORD
+export SAMBA_DC_REALM
+export HOSTNAME
+export SETUP_LOCK_FILE
 
-# [ -n "${SAMBA_DC_DOMAIN}" ] \
-#     && SAMBA_DC_DOMAIN="$(echo ${SAMBA_DC_DOMAIN} | tr [A-Z] [a-z])" \
-#     || SAMBA_DC_DOMAIN="$(echo ${SAMBA_DC_REALM%%.*} | tr [A-Z] [a-z])"
+# -------------------------------------------------------------------------------------------------
 
-COMMAND=ash
+setup() {
 
-# Add $COMMAND if needed
-if [ "${1:0:1}" = '-' ]
-then
-	set -- $COMMAND "$@"
-fi
+  if [ -f "${SETUP_LOCK_FILE}" ]
+  then
+    return
+  fi
 
-setup () {
+  run_bind() {
 
-# Configure the AD DC
-if [ ! -f /samba/etc/smb.conf ]
-then
-  mkdir -p /samba/etc /samba/lib /samba/log
+    /usr/sbin/named -c /etc/bind/named.conf -u named -f -g &
 
-  echo "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
-  samba-tool domain provision \
-    ${SAMBA_OPTIONS} \
-    --use-rfc2307 \
-    --domain="${SAMBA_DC_DOMAIN}" \
-    --realm="${SAMBA_DC_REALM}" \
-    --server-role=dc \
-    --adminpass="${SAMBA_DC_ADMIN_PASSWD}" \
-    --dns-backend="${SAMBA_DC_DNS_BACKEND}"
+    sleep 2
+  }
 
-  echo "${SAMBA_DC_DOMAIN} - Domain Provisioned Successfully"
+  kill_bind() {
 
-  cp -v /var/lib/samba/private/krb5.conf /etc/krb5.conf
+    pid=$(ps ax | grep named | grep -v grep | awk '{print $1}')
 
-  # Create Kerberos database
-  expect /init/build/kdb5_util_create.expect
+    if [ ! -z "${pid}" ]
+    then
+      kill -9 ${pid}
 
-  # Export kerberos keytab for use with sssd
-  samba-tool domain exportkeytab /etc/krb5.keytab --principal ${HOSTNAME}\$
-#  sed -i "s/SAMBA_REALM/${SAMBA_REALM}/" /etc/sssd/sssd.conf
+      sleep 2s
+    fi
+  }
 
-  # Move smb.conf
-#   [ -f /etc/samba/smb.conf ] && mv /etc/samba/smb.conf /var/lib/samba/private/smb.conf
-#   ln -sf /var/lib/samba/private/smb.conf /etc/samba/smb.conf
+  # Configure the AD DC
+  if [ ! -f /srv/etc/smb.conf ]
+  then
+    mkdir -p /srv/etc /srv/lib /srv/log
 
-  # add dns-forwarder if required
-  [ -n "$SAMBA_DNS_FORWARDER" ] \
-      && sed -i "/\[global\]/a \\\dns forwarder = $SAMBA_DNS_FORWARDER" /var/lib/samba/private/smb.conf
+    run_bind
 
-  # Mark samba as setup
-  touch "${SETUP_LOCK_FILE}"
-fi
+    echo "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
+    samba-tool domain provision \
+      ${SAMBA_OPTIONS} \
+      --use-rfc2307 \
+      --domain="${SAMBA_DC_DOMAIN}" \
+      --realm="${SAMBA_DC_REALM}" \
+      --server-role=dc \
+      --adminpass="${SAMBA_DC_ADMIN_PASSWD}" \
+      --dns-backend="${SAMBA_DC_DNS_BACKEND}"
+
+    echo "${SAMBA_DC_DOMAIN} - Domain Provisioned Successfully"
+
+    cp -v /var/lib/samba/private/krb5.conf /etc/krb5.conf
+
+    # Create Kerberos database
+    expect /init/build/kdb5_util_create.expect
+
+    # Export kerberos keytab for use with sssd
+    samba-tool domain exportkeytab \
+      /etc/krb5.keytab \
+      --principal ${HOSTNAME}\$
+
+    # add dns-forwarder if required
+    [ -n "$SAMBA_DNS_FORWARDER" ] \
+        && sed -i "/\[global\]/a \\\dns forwarder = $SAMBA_DNS_FORWARDER" /var/lib/samba/private/smb.conf
+
+    cp -arv /etc/samba       /srv/etc/
+    cp -av /etc/krb5*       /srv/etc/
+    cp -av /var/lib/krb5kdc /srv/
+
+    # Mark samba as setup
+    touch "${SETUP_LOCK_FILE}"
+
+    kill_bind
+
+    # smbd -b | egrep "LOCKDIR|STATEDIR|CACHEDIR|PRIVATE_DIR"
+    # smbclient -L localhost -U% --configfile=/srv/etc/samba/smb.conf
+    # smbclient //localhost/netlogon -UAdministrator -c 'ls' --configfile=/srv/etc/samba/smb.conf
+  fi
 }
 
 start() {
 
   # Fix nameserver
-  echo -e "search ${SAMBA_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf
-  echo -e "127.0.0.1 $HOSTNAME" > /etc/hosts
+  echo -e "search ${SAMBA_DC_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf
+  echo -e "127.0.0.1 ${HOSTNAME} localhost" > /etc/hosts
   echo -e "$HOSTNAME" > /etc/hostname
 
-  [ -d /var/log/samba/cores ] || mkdir -p /var/log/samba/cores
+  [ -d /var/log/named ] || mkdir -p /var/log/named
+
 
   chmod -R 0700 /var/log/samba
 
-  # setup
-  if [ ! -f "${SETUP_LOCK_FILE}" ]
+  if [ ! -f "/var/lib/krb5kdc/principal" ]
   then
-    setup
+    cp -a /srv/krb5kdc   /var/lib/
+    cp -a /srv/etc/krb5* /etc/
   fi
 
-#   # Recreate Kerberos database
-#   if [ ! -f "/var/lib/krb5kdc/principal" ]
-#   then
-#     rm -f /etc/krb5.conf
-#     ln -sf /var/lib/samba/private/krb5.conf /etc/krb5.conf
-#     haveged -w 1024
-#
-#     /usr/sbin/kdb5_util \
-#       create -s \
-#       -P $KERBEROS_PASSWORD \
-#       -r $SAMBA_REALM
-#
-#     samba-tool domain \
-#       exportkeytab /etc/krb5.keytab \
-#       --principal ${HOSTNAME}\$
-#   fi
+  [ -d /var/log/samba/cores ] || mkdir -pv /var/log/samba/cores
 
-  # Move smb.conf
-#  [ -f /etc/samba/smb.conf ] && mv /etc/samba/smb.conf /var/lib/samba/private/smb.conf
-#  ln -s /var/lib/samba/private/smb.conf /etc/samba/smb.conf
+  chown -Rv named: /var/bind /etc/bind /var/run/named /var/log/named
+  chmod -Rv o-rwx /var/bind /etc/bind /var/run/named /var/log/named
 
-  [ -f /var/lib/samba/private/smb.conf ] && cp -v /var/lib/samba/private/smb.conf /etc/samba/smb.conf
-
-  samba --debuglevel=3 --interactive
+  # samba --interactive --debuglevel=3 --debug-stderr --configfile=/srv/etc/samba/smb.conf
 }
 
-start
+startSupervisor() {
 
+#   echo -e "\n Starting Supervisor.\n\n"
 
-#
-# if [ "$1" = 'samba' ]
-# then
-#   exec samba --debuglevel=2 --interactive
-# else
-#   start
-# fi
-#
-# # Assume that user wants to run their own process,
-# # for example a `bash` shell to explore this image
-# exec "$@"
+  if [ -f /etc/supervisord.conf ]
+  then
+    /usr/bin/supervisord -c /etc/supervisord.conf >> /dev/null
+  else
+    echo " [E] no supervisord.conf found"
+    exit 1
+  fi
+}
+
+# -------------------------------------------------------------------------------------------------
+
+run() {
+
+  setup
+
+  start
+
+  startSupervisor
+}
+
+run

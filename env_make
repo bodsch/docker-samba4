@@ -1,10 +1,29 @@
+#PORTS = \
+#  --publish 37/udp \
+#  --publish 53 \
+#  --publish 88 \
+#  --publish 135/tcp \
+#  --publish 137/udp \
+#  --publish 138/udp \
+#  --publish 139 \
+#  --publish 389 \
+#  --publish 445 \
+#  --publish 464 \
+#  --publish 636/tcp \
+#  --publish 1024-5000/tcp \
+#  --publish 3268/tcp \
+#  --publish 3269/tcp
+
 PORTS = \
-  --publish 8080:8080 \
-  --publish 22222:22222
+  --publish 135-139 \
+  --publish 135-139/udp \
+  --publish 3389:389 \
+  --publish 3389:389/udp
 
 VOLUMES = \
   --volume /var/log/docker:/var/log \
-  --volume /tmp/docker-data/samba:/var/lib/samba
+  --volume /tmp/docker-data/samba:/var/lib/samba \
+  --volume /tmp/docker-data/samba:/srv
 
 ENV = \
   --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
