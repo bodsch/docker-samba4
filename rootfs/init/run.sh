@@ -11,7 +11,7 @@ SAMBA_DC_DOMAIN=${SAMBA_DC_DOMAIN:-smb}
 SAMBA_DC_REALM=${SAMBA_DC_REALM:-SAMBA.LAN}
 SAMBA_DC_DNS_BACKEND=${SAMBA_DC_DNS_BACKEND:-SAMBA_INTERNAL}
 
-SAMBA_DC_DNS_BACKEND=BIND9_FLATFILE
+# SAMBA_DC_DNS_BACKEND=BIND9_FLATFILE
 
 SAMBA_OPTIONS=${SAMBA_OPTIONS:-}
 
@@ -44,6 +44,8 @@ setup() {
 
   run_bind() {
 
+    chmod +rw /var/log/named/
+
     /usr/sbin/named -c /etc/bind/named.conf -u named -f -g &
 
     sleep 2
@@ -66,7 +68,7 @@ setup() {
   then
     mkdir -p /srv/etc /srv/lib /srv/log
 
-    run_bind
+#     run_bind
 
     echo "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
     samba-tool domain provision \
@@ -94,18 +96,24 @@ setup() {
     [ -n "$SAMBA_DNS_FORWARDER" ] \
         && sed -i "/\[global\]/a \\\dns forwarder = $SAMBA_DNS_FORWARDER" /var/lib/samba/private/smb.conf
 
-    cp -arv /etc/samba       /srv/etc/
+    sed -i '8 a tls enabled  = yes' /etc/samba/smb.conf
+    sed -i '9 a tls keyfile  = tls/key.pem' /etc/samba/smb.conf
+    sed -i '10 a tls certfile = tls/cert.pem' /etc/samba/smb.conf
+    sed -i '11 a tls cafile   = tls/ca.pem' /etc/samba/smb.conf
+
+    cp -arv /etc/samba      /srv/etc/
     cp -av /etc/krb5*       /srv/etc/
     cp -av /var/lib/krb5kdc /srv/
 
     # Mark samba as setup
     touch "${SETUP_LOCK_FILE}"
 
-    kill_bind
+#     kill_bind
 
     # smbd -b | egrep "LOCKDIR|STATEDIR|CACHEDIR|PRIVATE_DIR"
     # smbclient -L localhost -U% --configfile=/srv/etc/samba/smb.conf
     # smbclient //localhost/netlogon -UAdministrator -c 'ls' --configfile=/srv/etc/samba/smb.conf
+    # ldapsearch -H ldaps://localhost -x -LLL -z 0 -D "Administrator@samba.lan"  -w "kur-z3rSh1t" -b "DC=samba,DC=lan"
   fi
 }
 

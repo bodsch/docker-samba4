@@ -17,8 +17,10 @@
 PORTS = \
   --publish 135-139 \
   --publish 135-139/udp \
-  --publish 3389:389 \
-  --publish 3389:389/udp
+  --publish 389:389 \
+  --publish 389:389/udp \
+  --publish 445:445 \
+  --publish 636:636/tcp
 
 VOLUMES = \
   --volume /var/log/docker:/var/log \
