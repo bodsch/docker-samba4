@@ -1,33 +1,29 @@
-#PORTS = \
-#  --publish 37/udp \
-#  --publish 53 \
-#  --publish 88 \
-#  --publish 135/tcp \
-#  --publish 137/udp \
-#  --publish 138/udp \
-#  --publish 139 \
-#  --publish 389 \
-#  --publish 445 \
-#  --publish 464 \
-#  --publish 636/tcp \
-#  --publish 1024-5000/tcp \
-#  --publish 3268/tcp \
-#  --publish 3269/tcp
+
+DATA_DIR=/tmp/docker-data/samba
 
 PORTS = \
-  --publish 135-139 \
-  --publish 135-139/udp \
+  --publish 135:135 \
+  --publish 137:137/udp \
+  --publish 138:138/udp \
+  --publish 139:139 \
   --publish 389:389 \
   --publish 389:389/udp \
   --publish 445:445 \
-  --publish 636:636/tcp
+  --publish 464:464 \
+  --publish 636:636 \
+  --publish 3268:3268/tcp \
+  --publish 3269:3269/tcp
 
 VOLUMES = \
   --volume /var/log/docker:/var/log \
-  --volume /tmp/docker-data/samba:/var/lib/samba \
-  --volume /tmp/docker-data/samba:/srv
+  --volume ${DATA_DIR}:/var/lib/samba \
+  --volume ${DATA_DIR}:/srv
 
 ENV = \
   --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
   --env KERBEROS_PASSWORD="kur-z3rSh1t"
 
+# SAMBA_DC_DOMAIN  (default: smb)
+# SAMBA_DC_REALM   (default: SAMBA.LAN)
+# SAMBA_DC_DNS_BACKEND (default: SAMBA_INTERNAL) or BIND9_FLATFILE
+# SAMBA_OPTIONS    (default: )

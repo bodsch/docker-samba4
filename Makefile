@@ -20,6 +20,7 @@ clean:
 	docker rmi \
 		--force \
 		$(NS)/$(REPO):$(VERSION)
+	sudo rm -rf ${DATA_DIR}
 
 history:
 	docker history \

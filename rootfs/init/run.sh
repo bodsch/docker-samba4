@@ -1,7 +1,6 @@
 #!/bin/sh
 
 set -e
-set -x
 
 # -------------------------------------------------------------------------------------------------
 
@@ -42,7 +41,17 @@ setup() {
     return
   fi
 
+  if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
+  then
+    rm -f /etc/supervisor.d/bind.ini
+  fi
+
   run_bind() {
+
+    if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
+    then
+      return
+    fi
 
     chmod +rw /var/log/named/
 
@@ -52,6 +61,11 @@ setup() {
   }
 
   kill_bind() {
+
+    if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
+    then
+      return
+    fi
 
     pid=$(ps ax | grep named | grep -v grep | awk '{print $1}')
 
@@ -68,7 +82,7 @@ setup() {
   then
     mkdir -p /srv/etc /srv/lib /srv/log
 
-#     run_bind
+    run_bind
 
     echo "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
     samba-tool domain provision \
@@ -93,27 +107,29 @@ setup() {
       --principal ${HOSTNAME}\$
 
     # add dns-forwarder if required
-    [ -n "$SAMBA_DNS_FORWARDER" ] \
-        && sed -i "/\[global\]/a \\\dns forwarder = $SAMBA_DNS_FORWARDER" /var/lib/samba/private/smb.conf
+    [ -n "${SAMBA_DNS_FORWARDER}" ] \
+        && sed -i \
+          "/\[global\]/a \\\dns forwarder = ${SAMBA_DNS_FORWARDER}" \
+          /var/lib/samba/private/smb.conf
 
-    sed -i '8 a tls enabled  = yes' /etc/samba/smb.conf
-    sed -i '9 a tls keyfile  = tls/key.pem' /etc/samba/smb.conf
-    sed -i '10 a tls certfile = tls/cert.pem' /etc/samba/smb.conf
-    sed -i '11 a tls cafile   = tls/ca.pem' /etc/samba/smb.conf
+    sed -i '8 a         tls enabled  = yes' /etc/samba/smb.conf
+    sed -i '9 a         tls keyfile  = tls/key.pem' /etc/samba/smb.conf
+    sed -i '10 a         tls certfile = tls/cert.pem' /etc/samba/smb.conf
+    sed -i '11 a         tls cafile   = tls/ca.pem' /etc/samba/smb.conf
 
-    cp -arv /etc/samba      /srv/etc/
-    cp -av /etc/krb5*       /srv/etc/
-    cp -av /var/lib/krb5kdc /srv/
+    cp -ar /etc/samba       /srv/etc/
+    cp -a  /etc/krb5*       /srv/etc/
+    cp -a  /var/lib/krb5kdc /srv/
 
     # Mark samba as setup
     touch "${SETUP_LOCK_FILE}"
 
-#     kill_bind
+    kill_bind
 
     # smbd -b | egrep "LOCKDIR|STATEDIR|CACHEDIR|PRIVATE_DIR"
     # smbclient -L localhost -U% --configfile=/srv/etc/samba/smb.conf
     # smbclient //localhost/netlogon -UAdministrator -c 'ls' --configfile=/srv/etc/samba/smb.conf
-    # ldapsearch -H ldaps://localhost -x -LLL -z 0 -D "Administrator@samba.lan"  -w "kur-z3rSh1t" -b "DC=samba,DC=lan"
+    # ldapsearch -H ldaps://localhost -x -LLL -z 0 -D "Administrator@samba.lan"  -w "krazb4re+H5" -b "DC=samba,DC=lan"
   fi
 }
 
@@ -123,9 +139,6 @@ start() {
   echo -e "search ${SAMBA_DC_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf
   echo -e "127.0.0.1 ${HOSTNAME} localhost" > /etc/hosts
   echo -e "$HOSTNAME" > /etc/hostname
-
-  [ -d /var/log/named ] || mkdir -p /var/log/named
-
 
   chmod -R 0700 /var/log/samba
 
@@ -137,8 +150,14 @@ start() {
 
   [ -d /var/log/samba/cores ] || mkdir -pv /var/log/samba/cores
 
-  chown -Rv named: /var/bind /etc/bind /var/run/named /var/log/named
-  chmod -Rv o-rwx /var/bind /etc/bind /var/run/named /var/log/named
+  if [ ! ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
+  then
+
+    [ -d /var/log/named ] || mkdir -p /var/log/named
+
+    chown -Rv named: /var/bind /etc/bind /var/run/named /var/log/named
+    chmod -Rv o-rwx /var/bind /etc/bind /var/run/named /var/log/named
+  fi
 
   # samba --interactive --debuglevel=3 --debug-stderr --configfile=/srv/etc/samba/smb.conf
 }
