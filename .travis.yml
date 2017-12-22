@@ -9,9 +9,6 @@ group: edge
 services:
   - docker
 
-before_install:
-  - docker pull alpine:3.6
-
 install:
   - travis_retry docker build --tag bodsch/docker-samba4 .
   - docker run --detach --name samba4 bodsch/docker-samba4
