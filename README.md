@@ -47,9 +47,15 @@ You can find the Container also at  [DockerHub](https://hub.docker.com/r/bodsch/
 | `SAMBA_DC_REALM`                   | `SAMBA.LAN`          |                                                                 |
 | `SAMBA_DC_DNS_BACKEND`             | `SAMBA_INTERNAL`     | `BIND9_FLATFILE` is also supported and starts an internal bind  |
 | `SAMBA_OPTIONS`                    | -                    |                                                                 |
+|                                    |                      |                                                                 |
+| `TEST_USER`                        | -                    | if `true` the container will import some test users:<br>`grillstarling` and `bodsch` |
 
 
 # Test
 
     ldapsearch -H ldaps://localhost -D "Administrator@samba.lan"  -w "${SAMBA_DC_ADMIN_PASSWD}" -b "DC=samba,DC=lan"  '(objectClass=*)'
     ldapsearch -H ldaps://localhost -D "Administrator@samba.lan"  -w "${SAMBA_DC_ADMIN_PASSWD}" -b "DC=samba,DC=lan" -x -LLL -z 0
+
+With `TEST_USER` enabled, you can check the `grillstarling` User:
+
+    ldapsearch -H ldaps://localhost  -D "Administrator@samba.lan"  -w "${SAMBA_DC_ADMIN_PASSWD}" -b "CN=Users,DC=samba,DC=lan" '(&(objectClass=user)(sAMAccountName=grillstarling))'

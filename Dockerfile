@@ -29,9 +29,11 @@ RUN \
   apk upgrade --quiet --no-cache && \
   apk add --quiet --no-cache \
     bind \
+    ca-certificates \
     expect \
     krb5 \
     krb5-server \
+    openldap-clients \
     samba-dc \
     supervisor && \
   mv /etc/samba/smb.conf /etc/samba/smb.conf-DIST && \

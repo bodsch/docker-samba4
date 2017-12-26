@@ -1,6 +1,7 @@
 #!/bin/sh
 
 set -e
+# set -x
 
 # -------------------------------------------------------------------------------------------------
 
@@ -44,6 +45,13 @@ setup() {
   if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
   then
     rm -f /etc/supervisor.d/bind.ini
+  fi
+
+  if [ -f /etc/openldap/ldap.conf ]
+  then
+    echo "" >> /etc/openldap/ldap.conf
+    echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
+    echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
   fi
 
   run_bind() {
@@ -182,6 +190,8 @@ run() {
   setup
 
   start
+
+  . /init/import_users.sh
 
   startSupervisor
 }

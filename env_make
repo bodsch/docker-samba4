@@ -21,7 +21,8 @@ VOLUMES = \
 
 ENV = \
   --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
-  --env KERBEROS_PASSWORD="kur-z3rSh1t"
+  --env KERBEROS_PASSWORD="kur-z3rSh1t" \
+  --env TEST_USER=true
 
 # SAMBA_DC_DOMAIN  (default: smb)
 # SAMBA_DC_REALM   (default: SAMBA.LAN)
