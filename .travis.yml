@@ -11,7 +11,8 @@ services:
   - docker
 
 before_install:
-  - ls -l /etc/ldap
+  - ls -l /etc/ldap/*
+  - touch /etc/ldap/ldap.conf
   - echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf
   - echo "TLS_REQCERT ALLOW" >> /etc/ldap/ldap.conf
 
