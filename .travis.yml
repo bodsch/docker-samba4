@@ -7,8 +7,8 @@ services:
 
 before_install:
   - sudo apt-get install openldap-utils
-  - echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
-  - echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
+  - sudo echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
+  - sudo echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
 
 install:
   - travis_retry docker build --tag bodsch/docker-samba4 .
