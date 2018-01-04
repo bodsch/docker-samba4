@@ -4,7 +4,6 @@ addons:
   apt:
     packages:
     - ldap-utils
-    - slapd
 
 group: edge
 
@@ -12,6 +11,7 @@ services:
   - docker
 
 before_install:
+  - mkdir /etc/ldap
   - echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf
   - echo "TLS_REQCERT ALLOW" >> /etc/ldap/ldap.conf
 
