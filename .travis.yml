@@ -10,11 +10,11 @@ group: edge
 services:
   - docker
 
-before_install:
-  - ls -l /etc/ldap/*
-  - sudo touch /etc/ldap/ldap.conf
-  - sudo echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf
-  - sudo echo "TLS_REQCERT ALLOW" >> /etc/ldap/ldap.conf
+#before_install:
+#  - ls -l /etc/ldap/*
+#  - sudo touch /etc/ldap/ldap.conf
+#  - sudo echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf
+#  - sudo echo "TLS_REQCERT ALLOW" >> /etc/ldap/ldap.conf
 
 install:
   - travis_retry docker build --tag bodsch/docker-samba4 .
