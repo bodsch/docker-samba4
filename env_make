@@ -15,9 +15,10 @@ PORTS = \
   --publish 3269:3269/tcp
 
 VOLUMES = \
-  --volume /var/log/docker:/var/log \
-  --volume ${DATA_DIR}:/var/lib/samba \
-  --volume ${DATA_DIR}:/srv
+  --volume /var/log/docker:/var/log
+
+#  --volume ${DATA_DIR}:/var/lib/samba \
+#  --volume ${DATA_DIR}:/srv
 
 ENV = \
   --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \

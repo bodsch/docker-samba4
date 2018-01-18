@@ -11,9 +11,10 @@ create_certificate() {
   CERT_O="self signed"
   CERT_CN=${HOSTNAME}
 
-  if [ ! -e "${TLS_DIR}/cert.pem" ] || [ ! -e "${TLS_DIR}/key.pem" ]
+  if [[ ! -e "${TLS_DIR}/cert.pem" ]] || [[ ! -e "${TLS_DIR}/key.pem" ]]
   then
-    echo " [i] generating self signed cert"
+    log_info "generating self signed cert"
+
     openssl \
       req \
       -x509 \

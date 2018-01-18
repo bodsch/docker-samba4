@@ -15,7 +15,7 @@ SAMBA_DC_DNS_BACKEND=${SAMBA_DC_DNS_BACKEND:-SAMBA_INTERNAL}
 
 SAMBA_OPTIONS=${SAMBA_OPTIONS:-}
 
-[ -n "${SAMBA_HOST_IP}" ] && SAMBA_OPTIONS="${SAMBA_OPTIONS} --host-ip=${SAMBA_HOST_IP}"
+[[ -n "${SAMBA_HOST_IP}" ]] && SAMBA_OPTIONS="${SAMBA_OPTIONS} --host-ip=${SAMBA_HOST_IP}"
 
 SETUP_LOCK_FILE="/srv/etc/.setup.lock.do.not.remove"
 
@@ -33,21 +33,17 @@ export SAMBA_DC_REALM
 export HOSTNAME
 export SETUP_LOCK_FILE
 
+. /init/output.sh
+
 # -------------------------------------------------------------------------------------------------
 
 setup() {
 
-  if [ -f "${SETUP_LOCK_FILE}" ]
-  then
-    return
-  fi
+  [[ -f "${SETUP_LOCK_FILE}" ]] && return
 
-  if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
-  then
-    rm -f /etc/supervisor.d/bind.ini
-  fi
+  [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && rm -f /etc/supervisor.d/bind.ini
 
-  if [ -f /etc/openldap/ldap.conf ]
+  if [[ -f /etc/openldap/ldap.conf ]]
   then
     echo "" >> /etc/openldap/ldap.conf
     echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
@@ -56,10 +52,7 @@ setup() {
 
   run_bind() {
 
-    if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
-    then
-      return
-    fi
+    [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && return
 
     chmod +rw /var/log/named/
 
@@ -70,29 +63,28 @@ setup() {
 
   kill_bind() {
 
-    if [ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
-    then
-      return
-    fi
+    [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && return
 
     pid=$(ps ax | grep named | grep -v grep | awk '{print $1}')
 
-    if [ ! -z "${pid}" ]
+    if [[ ! -z "${pid}" ]]
     then
       kill -9 ${pid}
-
       sleep 2s
     fi
   }
 
   # Configure the AD DC
-  if [ ! -f /srv/etc/smb.conf ]
+  if [[ ! -f /srv/etc/smb.conf ]]
   then
-    mkdir -p /srv/etc /srv/lib /srv/log
+    mkdir -p \
+      /srv/etc \
+      /srv/lib \
+      /srv/log
 
     run_bind
 
-    echo "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
+    log_info "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
     samba-tool domain provision \
       ${SAMBA_OPTIONS} \
       --use-rfc2307 \
@@ -102,7 +94,7 @@ setup() {
       --adminpass="${SAMBA_DC_ADMIN_PASSWD}" \
       --dns-backend="${SAMBA_DC_DNS_BACKEND}"
 
-    echo "${SAMBA_DC_DOMAIN} - Domain Provisioned Successfully"
+    log_info "${SAMBA_DC_DOMAIN} - Domain Provisioned Successfully"
 
     cp -v /var/lib/samba/private/krb5.conf /etc/krb5.conf
 
@@ -115,7 +107,7 @@ setup() {
       --principal ${HOSTNAME}\$
 
     # add dns-forwarder if required
-    [ -n "${SAMBA_DNS_FORWARDER}" ] \
+    [[ -n "${SAMBA_DNS_FORWARDER}" ]] \
         && sed -i \
           "/\[global\]/a \\\dns forwarder = ${SAMBA_DNS_FORWARDER}" \
           /var/lib/samba/private/smb.conf
@@ -146,22 +138,21 @@ start() {
   # Fix nameserver
   echo -e "search ${SAMBA_DC_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf
   echo -e "127.0.0.1 ${HOSTNAME} localhost" > /etc/hosts
-  echo -e "$HOSTNAME" > /etc/hostname
+  echo -e "${HOSTNAME}" > /etc/hostname
+
+  [[ -d /var/log/samba/cores ]] || mkdir -pv /var/log/samba/cores
 
   chmod -R 0700 /var/log/samba
 
-  if [ ! -f "/var/lib/krb5kdc/principal" ]
+  if [[ ! -f "/var/lib/krb5kdc/principal" ]]
   then
     cp -a /srv/krb5kdc   /var/lib/
     cp -a /srv/etc/krb5* /etc/
   fi
 
-  [ -d /var/log/samba/cores ] || mkdir -pv /var/log/samba/cores
-
-  if [ ! ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]
+  if [[ ! ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]]
   then
-
-    [ -d /var/log/named ] || mkdir -p /var/log/named
+    [[ -d /var/log/named ]] || mkdir -p /var/log/named
 
     chown -Rv named: /var/bind /etc/bind /var/run/named /var/log/named
     chmod -Rv o-rwx /var/bind /etc/bind /var/run/named /var/log/named
@@ -170,15 +161,15 @@ start() {
   # samba --interactive --debuglevel=3 --debug-stderr --configfile=/srv/etc/samba/smb.conf
 }
 
-startSupervisor() {
+start_supervisor() {
 
-#   echo -e "\n Starting Supervisor.\n\n"
+  log_info "start init process ..."
 
-  if [ -f /etc/supervisord.conf ]
+  if [[ -f /etc/supervisord.conf ]]
   then
     /usr/bin/supervisord -c /etc/supervisord.conf >> /dev/null
   else
-    echo " [E] no supervisord.conf found"
+    log_error "no supervisord.conf found"
     exit 1
   fi
 }
@@ -193,7 +184,7 @@ run() {
 
   . /init/import_users.sh
 
-  startSupervisor
+  start_supervisor
 }
 
 run

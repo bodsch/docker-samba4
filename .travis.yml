@@ -1,20 +1,14 @@
 
 sudo: false
-addons:
-  apt:
-    packages:
-    - ldap-utils
+#addons:
+#  apt:
+#    packages:
+#    - ldap-utils
 
 group: edge
 
 services:
   - docker
-
-#before_install:
-#  - ls -l /etc/ldap/*
-#  - sudo touch /etc/ldap/ldap.conf
-#  - sudo echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/ldap/ldap.conf
-#  - sudo echo "TLS_REQCERT ALLOW" >> /etc/ldap/ldap.conf
 
 install:
   - travis_retry docker build --tag bodsch/docker-samba4 .
@@ -40,17 +34,18 @@ install:
 
 script:
   - docker ps | grep -q samba4
+#  - |
+#    ldapsearch \
+#    -H ldaps://localhost \
+#    -D "Administrator@samba.lan" \
+#    -w "krazb4re+H5" \
+#    -b "CN=Users,DC=samba,DC=lan" \
+#    '(&(objectClass=user)(sAMAccountName=grillstarling))'
+
+after_success:
   - |
-    ldapsearch \
-    -H ldaps://localhost \
-    -D "Administrator@samba.lan" \
-    -w "krazb4re+H5" \
-    -b "CN=Users,DC=samba,DC=lan" \
-    '(&(objectClass=user)(sAMAccountName=grillstarling))'
-
-notifications:
-  email: false
-
-cache:
-  directories:
-    - $HOME/docker
+    [ "${TRAVIS_BRANCH}" == "master" ] && curl \
+      --request POST \
+      --header "Content-Type: application/json"  \
+      --data '{"source_type":"Branch","source_name":"master"}' \
+      https://registry.hub.docker.com/u/bodsch/docker-samba4/trigger/${DOCKER_HUB_TOKEN}/
