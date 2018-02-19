@@ -109,13 +109,13 @@ setup() {
     # add dns-forwarder if required
     [[ -n "${SAMBA_DNS_FORWARDER}" ]] \
         && sed -i \
-          "/\[global\]/a \\\dns forwarder = ${SAMBA_DNS_FORWARDER}" \
-          /var/lib/samba/private/smb.conf
+          "s/dns forwarder.*$/dns forwarder = ${SAMBA_DNS_FORWARDER}/" \
+          /etc/samba/smb.conf
 
-    sed -i '8 a         tls enabled  = yes' /etc/samba/smb.conf
-    sed -i '9 a         tls keyfile  = tls/key.pem' /etc/samba/smb.conf
-    sed -i '10 a         tls certfile = tls/cert.pem' /etc/samba/smb.conf
-    sed -i '11 a         tls cafile   = tls/ca.pem' /etc/samba/smb.conf
+    sed -i '8 a\\ttls enabled  = yes' /etc/samba/smb.conf
+    sed -i '9 a\\ttls keyfile  = tls/key.pem' /etc/samba/smb.conf
+    sed -i '10 a\\ttls certfile = tls/cert.pem' /etc/samba/smb.conf
+    sed -i '11 a\\ttls cafile   = tls/ca.pem' /etc/samba/smb.conf
 
     cp -ar /etc/samba       /srv/etc/
     cp -a  /etc/krb5*       /srv/etc/
