@@ -28,6 +28,7 @@ RUN \
   apk update --quiet --no-cache && \
   apk upgrade --quiet --no-cache && \
   apk add --quiet --no-cache \
+    bash \
     bind \
     ca-certificates \
     expect \
