@@ -5,11 +5,11 @@ EXPOSE 37/udp 53 88 135/tcp 137/udp 138/udp 139 389 445 464 636/tcp 1024-5000/tc
 
 ENV \
   TERM=xterm \
-  BUILD_DATE="2018-01-18" \
-  VERSION="4.7.3"
+  BUILD_DATE="2018-05-04" \
+  VERSION="4.7.6"
 
 LABEL \
-  version="1801" \
+  version="1805" \
   maintainer="Bodo Schulz <bodo@boone-schulz.de>" \
   org.label-schema.build-date=${BUILD_DATE} \
   org.label-schema.name="Samba4 Docker Image" \
