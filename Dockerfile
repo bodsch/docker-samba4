@@ -1,15 +1,14 @@
 
-FROM alpine:3.7
+FROM alpine:latest
 
 EXPOSE 37/udp 53 88 135/tcp 137/udp 138/udp 139 389 445 464 636/tcp 1024-5000/tcp 3268/tcp 3269/tcp
 
-ENV \
-  TERM=xterm \
-  BUILD_DATE="2018-05-04" \
-  VERSION="4.7.6"
+ARG BUILD_DATE
+ARG BUILD_VERSION
+ARG SAMBA_VERSION
 
 LABEL \
-  version="1805" \
+  version="${BUILD_VERSION}" \
   maintainer="Bodo Schulz <bodo@boone-schulz.de>" \
   org.label-schema.build-date=${BUILD_DATE} \
   org.label-schema.name="Samba4 Docker Image" \
@@ -17,7 +16,7 @@ LABEL \
   org.label-schema.url="https://www.samba.org/" \
   org.label-schema.vcs-url="https://github.com/bodsch/docker-samba4" \
   org.label-schema.vendor="Bodo Schulz" \
-  org.label-schema.version=${VERSION} \
+  org.label-schema.version=${SAMBA_VERSION} \
   org.label-schema.schema-version="1.0" \
   com.microscaling.docker.dockerfile="/Dockerfile" \
   com.microscaling.license="unlicense"

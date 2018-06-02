@@ -1,51 +1,44 @@
-
 sudo: false
-#addons:
-#  apt:
-#    packages:
-#    - ldap-utils
-
 group: edge
-
 services:
-  - docker
+- docker
+env:
+  global:
+  - DOCKER_USERNAME: bodsch
+  - secure: KhxkC0LGnpR3xFD9uomB4bsI/yzXGJnu1jqZLItaxKaoMveqXPq/GZ50+Tqdb+E98Wcio0JW6KaLMJbeyPDo4OozzyqCfdqYq4OixBZ9rlfur/4yIFSBxsRjtKDB28abcpIonJ8fetMJObC6rwODhk8nNuLhT1aYy4dK7SRH4IuH4fJRPi6AQhLH/oiqQQWj2V0ff8zTCVN4bMesVlmS9RGD4QmaxsnEUSy4puIceuwHWpmKQd6UTbLunmA0ougdJ2lD+p6rFa/hDx5MXkccssiT8skTDHIPGY4wWIWp0DZhHS9f3zES/j4BMt7Zc/umxWUAF8yhSviKu0BLPMAyqeRpbLqx1FMHk3aYKIuzdJgT8qohxAe7QQ0Cm2f5wBMxtLEfjNt3coXFdxdeEAhJX1ypxAEmyGbUL0S7mUzKpIv5uEaBt40Yun8+5ZN+VPJ0wUv0rsOh8FhI3KV2IbVV8Zn4pTlUgMzRJcSTLpItlxj8JwpFf4dwiuPV6ET1MLmjHwkGGtVrVcAzyqGLtigNie/KAjI0kMIpEPdl4IRe6Jsel4/8QLWgUaPDIV6Yub8lMi96+6GDFDkUUTbT2vPEXpaf/FkcR0Oel9uKtyoW6J9yOoHSykoF0vDF7aG/0KKyHdreo1U9rlLVts9k9chve+3GsKBgbyrS1A2G7uAx/W4=
 
-install:
-  - travis_retry docker build --tag bodsch/docker-samba4 .
-  - |
-    docker run \
-    --detach \
-    --name samba4 \
-    --publish 135:135 \
-    --publish 137:137/udp \
-    --publish 138:138/udp \
-    --publish 139:139 \
-    --publish 389:389 \
-    --publish 389:389/udp \
-    --publish 445:445 \
-    --publish 464:464 \
-    --publish 636:636 \
-    --publish 3268:3268/tcp \
-    --publish 3269:3269/tcp \
-    --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
-    --env KERBEROS_PASSWORD="kur-z3rSh1t" \
-    --env TEST_USER=true \
-    bodsch/docker-samba4
-
-script:
-  - docker ps | grep -q samba4
-#  - |
-#    ldapsearch \
-#    -H ldaps://localhost \
-#    -D "Administrator@samba.lan" \
-#    -w "krazb4re+H5" \
-#    -b "CN=Users,DC=samba,DC=lan" \
-#    '(&(objectClass=user)(sAMAccountName=grillstarling))'
-
-after_success:
-  - |
-    [ "${TRAVIS_BRANCH}" == "master" ] && curl \
-      --request POST \
-      --header "Content-Type: application/json"  \
-      --data '{"source_type":"Branch","source_name":"master"}' \
-      https://registry.hub.docker.com/u/bodsch/docker-samba4/trigger/${DOCKER_HUB_TOKEN}/
+jobs:
+  include:
+  - stage: build
+    script:
+    - make build
+  - stage: test
+    script:
+    - make build
+    - |
+      docker run \
+      --detach \
+      --name samba4 \
+      --publish 135:135 \
+      --publish 137:137/udp \
+      --publish 138:138/udp \
+      --publish 139:139 \
+      --publish 389:389 \
+      --publish 389:389/udp \
+      --publish 445:445 \
+      --publish 464:464 \
+      --publish 636:636 \
+      --publish 3268:3268/tcp \
+      --publish 3269:3269/tcp \
+      --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
+      --env KERBEROS_PASSWORD="kur-z3rSh1t" \
+      --env TEST_USER=true \
+      bodsch/docker-samba4
+    - docker ps | grep -q samba4
+    - docker stop samba4
+  - stage: publish
+    script:
+    - make build
+    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+    - docker push ${DOCKER_USERNAME}/docker-samba4:latest
+    - docker logout
