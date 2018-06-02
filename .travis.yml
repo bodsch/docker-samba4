@@ -5,7 +5,6 @@ services:
 env:
   global:
   - DOCKER_USERNAME: bodsch
-  - secure: KhxkC0LGnpR3xFD9uomB4bsI/yzXGJnu1jqZLItaxKaoMveqXPq/GZ50+Tqdb+E98Wcio0JW6KaLMJbeyPDo4OozzyqCfdqYq4OixBZ9rlfur/4yIFSBxsRjtKDB28abcpIonJ8fetMJObC6rwODhk8nNuLhT1aYy4dK7SRH4IuH4fJRPi6AQhLH/oiqQQWj2V0ff8zTCVN4bMesVlmS9RGD4QmaxsnEUSy4puIceuwHWpmKQd6UTbLunmA0ougdJ2lD+p6rFa/hDx5MXkccssiT8skTDHIPGY4wWIWp0DZhHS9f3zES/j4BMt7Zc/umxWUAF8yhSviKu0BLPMAyqeRpbLqx1FMHk3aYKIuzdJgT8qohxAe7QQ0Cm2f5wBMxtLEfjNt3coXFdxdeEAhJX1ypxAEmyGbUL0S7mUzKpIv5uEaBt40Yun8+5ZN+VPJ0wUv0rsOh8FhI3KV2IbVV8Zn4pTlUgMzRJcSTLpItlxj8JwpFf4dwiuPV6ET1MLmjHwkGGtVrVcAzyqGLtigNie/KAjI0kMIpEPdl4IRe6Jsel4/8QLWgUaPDIV6Yub8lMi96+6GDFDkUUTbT2vPEXpaf/FkcR0Oel9uKtyoW6J9yOoHSykoF0vDF7aG/0KKyHdreo1U9rlLVts9k9chve+3GsKBgbyrS1A2G7uAx/W4=
 
 jobs:
   include:
@@ -38,7 +37,6 @@ jobs:
     - docker stop samba4
   - stage: publish
     script:
-    - make build
     - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
-    - docker push ${DOCKER_USERNAME}/docker-samba4:latest
+    - make release
     - docker logout
