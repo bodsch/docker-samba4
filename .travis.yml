@@ -1,7 +1,9 @@
 sudo: false
 group: edge
+
 services:
 - docker
+
 env:
   global:
   - DOCKER_USERNAME: bodsch
@@ -11,6 +13,7 @@ jobs:
   - stage: build
     script:
     - make build
+
   - stage: test
     script:
     - make build
@@ -35,6 +38,7 @@ jobs:
       bodsch/docker-samba4
     - docker ps | grep -q samba4
     - docker stop samba4
+
   - stage: publish
     script:
     - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
