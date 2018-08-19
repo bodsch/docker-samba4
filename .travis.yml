@@ -42,8 +42,8 @@ jobs:
       - make test
       - docker stop samba4
 
-  - stage: publish
-    script:
-    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
-    - make release
-    - docker logout
+    - stage: publish
+      script:
+      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+      - make release
+      - docker logout
