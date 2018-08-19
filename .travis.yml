@@ -5,7 +5,7 @@ services:
 
 env:
   global:
-  - DOCKER_USERNAME: bodsch
+    - DOCKER_USERNAME=bodsch
     - BUILD_DATE=$(date +%Y-%m-%d)
     - BUILD_VERSION=$(date +%y%m)
     - SAMBA_VERSION=$(./latest_release.sh)
