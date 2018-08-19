@@ -9,17 +9,7 @@ INSTANCE = default
 
 BUILD_DATE    := $(shell date +%Y-%m-%d)
 BUILD_VERSION := $(shell date +%y%m)
-SAMBA_VERSION ?= $(shell curl \
-  --silent \
-  --location \
-  --retry 3 \
-  http://dl-cdn.alpinelinux.org/alpine/latest-stable/main/x86_64/APKINDEX.tar.gz | \
-  gunzip | \
-  strings | \
-  grep -A1 "P:samba-dc" | \
-  tail -n1 | \
-  cut -d ':' -f2 | \
-  cut -d '-' -f1)
+SAMBA_VERSION ?= $(shell ./latest_release.sh)
 
 
 .PHONY: build push shell run start stop rm release
@@ -41,6 +31,14 @@ build:	params
 		--build-arg BUILD_VERSION=$(BUILD_VERSION) \
 		--build-arg SAMBA_VERSION=$(SAMBA_VERSION) \
 		--tag $(NS)/$(REPO):$(SAMBA_VERSION) .
+	docker build \
+		--file Dockerfile.test \
+		--rm \
+		--compress \
+		--build-arg BUILD_DATE=$(BUILD_DATE) \
+		--build-arg BUILD_VERSION=$(BUILD_VERSION) \
+		--build-arg SAMBA_VERSION=$(SAMBA_VERSION) \
+		--tag $(NS)/$(REPO)-test:$(SAMBA_VERSION) .
 
 clean:
 	docker rmi \
@@ -68,6 +66,28 @@ shell:
 		$(ENV) \
 		$(NS)/$(REPO):$(SAMBA_VERSION) \
 		/bin/sh
+
+shell-test:
+	docker run \
+		--rm \
+		--name $(NAME)-$(INSTANCE)-test \
+		--interactive \
+		--tty \
+		--privileged \
+		--link $(NAME)-$(INSTANCE):samba4 \
+		--env SMB_HOST=samba4 \
+		$(NS)/$(REPO)-test:$(SAMBA_VERSION) \
+		/bin/sh
+
+test:
+	docker run \
+		--rm \
+		--name $(NAME)-$(INSTANCE)-test \
+		--privileged \
+		--link $(NAME)-$(INSTANCE):samba4 \
+		--env SMB_HOST=samba4 \
+		$(NS)/$(REPO)-test:$(SAMBA_VERSION) \
+		/tests.sh
 
 run:
 	docker run \
@@ -102,6 +122,16 @@ stop:
 rm:
 	docker rm \
 		$(NAME)-$(INSTANCE)
+
+compose-file:
+	echo "BUILD_DATE=$(BUILD_DATE)" > .env
+	echo "BUILD_VERSION=$(BUILD_VERSION)" >> .env
+	echo "SAMBA_DC_ADMIN_PASSWD=krazb4re+H5" >> .env
+	echo "KERBEROS_PASSWORD=kur-z3rSh1t" >> .env
+	echo "SMB_HOST=samba4" >> .env
+	docker-compose \
+		--file docker-compose_example.yml \
+		config > docker-compose.yml
 
 release: build
 	make push -e VERSION=$(SAMBA_VERSION)

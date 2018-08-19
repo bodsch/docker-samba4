@@ -1,0 +1,47 @@
+---
+version: '3.3'
+
+services:
+  samba4:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - BUILD_DATE=${BUILD_DATE}
+        - BUILD_VERSION=${BUILD_VERSION}
+    container_name: samba4
+    hostname: samba4
+    ports:
+      - 135:135
+      - 137:137/udp
+      - 138:138/udp
+      - 139:139
+      - 389:389
+      - 389:389/udp
+      - 445:445
+      - 464:464
+      - 636:636
+      - 3268:3268/tcp
+      - 3269:3269/tcp
+    environment:
+      SAMBA_DC_ADMIN_PASSWD: ${SAMBA_DC_ADMIN_PASSWD}
+      KERBEROS_PASSWORD: ${KERBEROS_PASSWORD}
+      TEST_USER: 'true'
+
+  samba4-test:
+    restart: always
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+      args:
+        - BUILD_DATE=${BUILD_DATE}
+        - BUILD_VERSION=${BUILD_VERSION}
+    container_name: samba4-test
+    hostname: samba4-test
+    environment:
+      SAMBA_DC_ADMIN_PASSWD: ${SAMBA_DC_ADMIN_PASSWD}
+      KERBEROS_PASSWORD: ${KERBEROS_PASSWORD}
+      SMB_HOST: ${SMB_HOST}
+    links:
+      - samba4
