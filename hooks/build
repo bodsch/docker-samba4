@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Custom build for Docker Hub
+# see: https://medium.com/microscaling-systems/labelling-automated-builds-on-docker-hub-f3d073fb8e1
+
+docker build \
+  --file Dockerfile \
+  --rm \
+  --compress \
+  --build-arg VCS_REF=${GIT_SHA1} \
+  --build-arg BUILD_DATE=${BUILD_DATE} \
+  --build-arg BUILD_VERSION=${BUILD_VERSION} \
+  --build-arg SAMBA_VERSION=${SAMBA_VERSION} \
+  --tag ${DOCKER_NAME_SPACE}/${DOCKER_IMAGE_NAME}:${DOCKER_VERSION} .
