@@ -5,6 +5,8 @@ set -e
 
 # -------------------------------------------------------------------------------------------------
 
+. /init/output.sh
+
 HOSTNAME=$(hostname -f)
 
 SAMBA_DC_DOMAIN=${SAMBA_DC_DOMAIN:-smb}
@@ -24,8 +26,8 @@ pass=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c20; echo)
 SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-${pass}}
 KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-${pass}}
 
-# echo "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
-# echo "Kerberos password set to: $KERBEROS_PASSWORD"
+log_debug "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
+log_debug "Kerberos password set to: $KERBEROS_PASSWORD"
 
 # we need the export for kdb5_util
 export KERBEROS_PASSWORD
@@ -33,7 +35,6 @@ export SAMBA_DC_REALM
 export HOSTNAME
 export SETUP_LOCK_FILE
 
-. /init/output.sh
 
 # -------------------------------------------------------------------------------------------------
 
@@ -43,12 +44,12 @@ setup() {
 
   [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && rm -f /etc/supervisor.d/bind.ini
 
-  if [[ -f /etc/openldap/ldap.conf ]]
-  then
-    echo "" >> /etc/openldap/ldap.conf
-    echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
-    echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
-  fi
+  #if [[ -f /etc/openldap/ldap.conf ]]
+  #then
+  #  echo "" >> /etc/openldap/ldap.conf
+  #  echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
+  #  echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
+  #fi
 
   run_bind() {
 
@@ -92,7 +93,8 @@ setup() {
       --realm="${SAMBA_DC_REALM}" \
       --server-role=dc \
       --adminpass="${SAMBA_DC_ADMIN_PASSWD}" \
-      --dns-backend="${SAMBA_DC_DNS_BACKEND}"
+      --dns-backend="${SAMBA_DC_DNS_BACKEND}" \
+      > /dev/null
 
     log_info "${SAMBA_DC_DOMAIN} - Domain Provisioned Successfully"
 
@@ -117,6 +119,30 @@ setup() {
     sed -i '10 a\\ttls certfile = tls/cert.pem' /etc/samba/smb.conf
     sed -i '11 a\\ttls cafile   = tls/ca.pem' /etc/samba/smb.conf
 
+    if [[ -f /etc/samba/smb.conf.tpl ]]
+    then
+      sed -i \
+        -e "s|%NETBIOS_NAME%|$(hostname -s | tr '[:lower:]' '[:upper:]')|" \
+        -e "s|%REALM%|${SAMBA_DC_REALM}|" \
+        -e "s|%WORKGROUP%|$(echo ${SAMBA_DC_DOMAIN} | tr '[:lower:]' '[:upper:]')|" \
+        -e "s|%ALLOW_DNS_UPDATES%|secure|" \
+        -e "s|%BIND_INTERFACES_ONLY%|yes|" \
+        -e "s|%DOMAIN_LOGONS%|yes|" \
+        -e "s|%DOMAIN_MASTER%|no|" \
+        -e "s|%INTERFACES%|lo eth0|" \
+        -e "s|%LOG_LEVEL%|1|" \
+        -e "s|%WINBIND_TRUSTED_DOMAINS_ONLY%|no|" \
+        -e "s|%WINBIND_USE_DEFAULT_DOMAIN%|yes|" \
+        /etc/samba/smb.conf.tpl
+    fi
+
+    echo 'root = administrator' > /etc/samba/smbusers
+
+
+    for file in $(ls -A /etc/samba/conf.d/*.conf 2> /dev/null); do
+      echo "include = $file" >> /etc/samba/smb.conf
+    done
+
     cp -ar /etc/samba       /srv/etc/
     cp -a  /etc/krb5*       /srv/etc/
     cp -a  /var/lib/krb5kdc /srv/
@@ -134,6 +160,9 @@ setup() {
 }
 
 start() {
+
+  log_info "use '${SAMBA_DC_ADMIN_PASSWD}' as DC admin password"
+  log_info "use '${KERBEROS_PASSWORD}' as kerberos password"
 
   # Fix nameserver
   echo -e "search ${SAMBA_DC_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf

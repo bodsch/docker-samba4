@@ -18,7 +18,7 @@ VOLUMES=""
 #  --volume ${DATA_DIR}/log:/var/log \
 #  --volume ${DATA_DIR}/srv:/srv"
 
-ENV=""
-#  --env SAMBA_DC_ADMIN_PASSWD=krazb4re+H5 \
-#  --env KERBEROS_PASSWORD=kur-z3rSh1t \
-#  --env TEST_USER=true"
+ENV="
+  --env SAMBA_DC_ADMIN_PASSWD=krazb4re+H5 \
+  --env KERBEROS_PASSWORD=kur-z3rSh1t \
+  --env TEST_USER=true"
