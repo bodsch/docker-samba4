@@ -16,10 +16,30 @@
   interfaces = %INTERFACES%
   log level = %LOG_LEVEL%
   winbind refresh tickets = Yes
-  winbind trusted domains only = %WINBIND_TRUSTED_DOMAINS_ONLY%
+  # winbind trusted domains only = %WINBIND_TRUSTED_DOMAINS_ONLY%
   winbind use default domain = %WINBIND_USE_DEFAULT_DOMAIN%
 
-  ttls enabled  = yes
-  ttls keyfile  = tls/key.pem
-  ttls certfile = tls/cert.pem
-  ttls cafile   = tls/ca.pem
+  state directory = %SAMBA_TARGET_DIR%/state
+  cache directory = %SAMBA_TARGET_DIR%/cache
+  private dir     = %SAMBA_TARGET_DIR%/private
+
+  #ttls enabled  = yes
+  #ttls keyfile  = tls/key.pem
+  #ttls certfile = tls/cert.pem
+  #ttls cafile   = tls/ca.pem
+
+  dns forwarder = 127.0.0.11
+
+
+
+#  cache directory = /srv/cache
+#  dns forwarder = 127.0.0.11
+#  lock directory = /srv
+#  log level = 0
+#  netbios name = SAMBA4
+#  private dir = /srv/private
+#  realm = MATRIX.LAN
+#  server role = active directory domain controller
+#  state directory = /srv/state
+#  workgroup = SMB
+#  idmap_ldb:use rfc2307 = yes

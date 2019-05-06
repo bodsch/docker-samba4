@@ -12,34 +12,26 @@ jobs:
   include:
   - stage: build
     script:
-    - make build
+    - make
   - stage: test
     script:
-    - make build
-    - |
-      docker run \
-      --detach \
-      --name samba4 \
-      --publish 135:135 \
-      --publish 137:137/udp \
-      --publish 138:138/udp \
-      --publish 139:139 \
-      --publish 389:389 \
-      --publish 389:389/udp \
-      --publish 445:445 \
-      --publish 464:464 \
-      --publish 636:636 \
-      --publish 3268:3268/tcp \
-      --publish 3269:3269/tcp \
-      --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
-      --env KERBEROS_PASSWORD="kur-z3rSh1t" \
-      --env TEST_USER=true \
-      bodsch/docker-samba4
-    - docker ps | grep -q samba4
+    - make compose-file
+    - docker-compose up --build -d
+    - sleep 15s
     - make test
-    - docker stop samba4
-  - stage: publish
+    - docker-compose down
+  - stage: push latest docker image
     script:
+    - make
     - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
-    - make release
+    - docker tag ${USER}/samba4:latest ${DOCKER_USERNAME}/docker-samba4:latest
+    - docker push ${DOCKER_USERNAME}/docker-samba4:latest
+    - docker logout
+  - stage: push version docker image
+    if: branch = master
+    script:
+    - make
+    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+    - docker tag ${USER}/samba4:latest ${DOCKER_USERNAME}/docker-samba4:${SAMBA_VERSION}
+    - docker push ${DOCKER_USERNAME}/docker-samba4:${SAMBA_VERSION}
     - docker logout

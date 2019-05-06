@@ -5,13 +5,20 @@
 
 [[ -e hooks/environment ]] && . hooks/environment
 
-echo "BUILD_DATE=${BUILD_DATE}" > .env
-echo "BUILD_VERSION=${BUILD_VERSION}" >> .env
-echo "BUILD_TYPE=${BUILD_TYPE}" >> .env
-echo "ICINGAWEB_VERSION=${ICINGAWEB_VERSION}" >> .env
-echo "INSTALL_THEMES=${INSTALL_THEMES}" >> .env
-echo "INSTALL_MODULES=${INSTALL_MODULES}" >> .env
+cat << EOF > .env
+
+BUILD_DATE=${BUILD_DATE}
+BUILD_VERSION=${BUILD_VERSION}
+BUILD_TYPE=${BUILD_TYPE}
+
+SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-krazb4re+H5}
+KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-kur-z3rSh1t}
+TEST_USER=true
+
+EOF
+
 
 docker-compose \
-  --file docker-compose_example.yml \
+  --file compose/head.yml \
+  --file compose/samba4.yml \
   config > docker-compose.yml
