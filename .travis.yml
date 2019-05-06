@@ -1,49 +1,45 @@
 sudo: required
-
 services:
-  - docker
-
+- docker
 env:
   global:
-    - DOCKER_USERNAME=bodsch
-    - BUILD_DATE=$(date +%Y-%m-%d)
-    - BUILD_VERSION=$(date +%y%m)
-    - SAMBA_VERSION=$(./latest_release.sh)
-
+  - DOCKER_USERNAME=bodsch
+  - BUILD_DATE=$(date +%Y-%m-%d)
+  - BUILD_VERSION=$(date +%y%m)
+  - SAMBA_VERSION=$(./hooks/latest_release.sh)
+  - secure: fruLn5wcEQE6NAmiEkxP8uw6KNtbgZEys2O67FH+5wSwSupERQ3ekUMRVhE58/nNJ3CILFLdASvntjrlweg2Ex/4aSzPxIuO7jaIfXSYd2EAWvs5DS03Rr2rVDSR6eeZGw8xj8Oob9ZYsgKDx/vlqQrqcQ7YcVm+sAVO4nAqftnNiRjvBvZ2WCG+68why8dOCoANP2BpL+3GBe1TRQGUSsQG2PRznsNuofC/nLahFYguDPW2rlTUQc3GXrcGhwTj4Pm9Y2aSUWTtpXMnJuRLxKceBjjFXbeIw3Qde0wj69/Hn0o9/AaBrlgOfXrMu5uQE4yCWfbSK8qKywE3TTmclpRq5KYsCbqDt4Inm3WePfuyO4yYU957Zl/E++N0rvZ+FjJGggh3bfggwJ0Zy/9vu+7k97Zg7kuhlt5sHws2ZcRXi8ahFj3CDmwmDNtbNjKeZB9z+qjn+WUnes4y4ingpsLT6mIskrLP0+D0EUaG6z5Is667wpG988QHZw0yGTV8R+lERUDk+kolkFMgdh3/STLrjxjR8sl3WPRa7zI2Jp2rK3vv+1R4b23P3ZnZgHC7kAHKq4YZ5dLhmr3975btOtf3vic7NpPC5jAieScAf039J2S87wbHCKvwnBqa3DL/UTLl4AOfntCYQQxZB8CZo4kltwLGxwYguyCP6EX1eEc=
 jobs:
   include:
-    - stage: build
-      script:
-      - make build
-
-    - stage: test
-      script:
-      - make build
-      - |
-        docker run \
-        --detach \
-        --name samba4 \
-        --publish 135:135 \
-        --publish 137:137/udp \
-        --publish 138:138/udp \
-        --publish 139:139 \
-        --publish 389:389 \
-        --publish 389:389/udp \
-        --publish 445:445 \
-        --publish 464:464 \
-        --publish 636:636 \
-        --publish 3268:3268/tcp \
-        --publish 3269:3269/tcp \
-        --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
-        --env KERBEROS_PASSWORD="kur-z3rSh1t" \
-        --env TEST_USER=true \
-        bodsch/docker-samba4
-      - docker ps | grep -q samba4
-      - make test
-      - docker stop samba4
-
-    - stage: publish
-      script:
-      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
-      - make release
-      - docker logout
+  - stage: build
+    script:
+    - make build
+  - stage: test
+    script:
+    - make build
+    - |
+      docker run \
+      --detach \
+      --name samba4 \
+      --publish 135:135 \
+      --publish 137:137/udp \
+      --publish 138:138/udp \
+      --publish 139:139 \
+      --publish 389:389 \
+      --publish 389:389/udp \
+      --publish 445:445 \
+      --publish 464:464 \
+      --publish 636:636 \
+      --publish 3268:3268/tcp \
+      --publish 3269:3269/tcp \
+      --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
+      --env KERBEROS_PASSWORD="kur-z3rSh1t" \
+      --env TEST_USER=true \
+      bodsch/docker-samba4
+    - docker ps | grep -q samba4
+    - make test
+    - docker stop samba4
+  - stage: publish
+    script:
+    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+    - make release
+    - docker logout
