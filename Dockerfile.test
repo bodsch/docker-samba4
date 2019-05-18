@@ -1,16 +1,12 @@
 
-FROM alpine:3.8
-
-ARG BUILD_DATE
-ARG BUILD_VERSION
-ARG SAMBA_VERSION
+FROM alpine:3.9
 
 # ---------------------------------------------------------------------------------------
 
 RUN \
-  apk update --quiet --no-cache && \
+  apk update  --quiet --no-cache && \
   apk upgrade --quiet --no-cache && \
-  apk add --quiet --no-cache \
+  apk add     --quiet --no-cache \
     bash \
     ca-certificates \
     samba-client \
@@ -20,7 +16,7 @@ RUN \
     /var/cache/apk/*
 
 ADD rootfs/ /
-ADD test/ /
+ADD tests/ /
 
 CMD ["/tests.sh"]
 

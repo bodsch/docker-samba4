@@ -1,0 +1,24 @@
+
+DATA_DIR="${PWD}/data"
+
+PORTS="
+  --publish 135:135 \
+  --publish 137:137/udp \
+  --publish 138:138/udp \
+  --publish 139:139 \
+  --publish 389:389 \
+  --publish 389:389/udp \
+  --publish 445:445 \
+  --publish 464:464 \
+  --publish 636:636 \
+  --publish 3268:3268/tcp \
+  --publish 3269:3269/tcp"
+
+VOLUMES=""
+#  --volume ${DATA_DIR}/log:/var/log \
+#  --volume ${DATA_DIR}/srv:/srv"
+
+ENV="
+  --env SAMBA_DC_ADMIN_PASSWD=krazb4re+H5 \
+  --env KERBEROS_PASSWORD=kur-z3rSh1t \
+  --env TEST_USER=true"

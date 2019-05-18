@@ -1,13 +1,19 @@
 #!/bin/bash
 
 SAMBA_DC_DOMAIN=${SAMBA_DC_DOMAIN:-smb}
-SAMBA_DC_REALM=${SAMBA_DC_REALM:-SAMBA.LAN}
+SAMBA_DC_REALM=${SAMBA_DC_REALM:-MATRIX.LAN}
 
 SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-krazb4re+H5}
 
-SMB_HOST="${SMB_HOST:-localhost}"
+SMB_HOST="${SMB_HOST:-samba4}"
 CSV_FILE="/init/build/import_users.csv"
 
+cat > /.smbclient.conf << EOF
+username=Administrator
+password=${SAMBA_DC_ADMIN_PASSWD}
+EOF
+
+cat /.smbclient.conf
 
 if [[ -f /etc/openldap/ldap.conf ]]
 then
@@ -32,9 +38,31 @@ check_user() {
   echo "found  '${user}'"
 }
 
-echo "${SAMBA_DC_ADMIN_PASSWD}" | smbclient -L ${SMB_HOST} -UAdministrator  --max-protocol=SMB2
-echo "${SAMBA_DC_ADMIN_PASSWD}" | smbclient //${SMB_HOST}/netlogon -UAdministrator -c 'ls'
-ldapsearch -H ldaps://${SMB_HOST} -x -LLL -z 0 -D "Administrator@${SAMBA_DC_REALM}"  -w "${SAMBA_DC_ADMIN_PASSWD}" -b "${realm}"
+smbclient --list=${SMB_HOST} --authentication-file=/.smbclient.conf  --max-protocol=SMB2
+
+echo ""
+
+smbclient //${SMB_HOST}/sysvol --authentication-file=/.smbclient.conf --command='ls'
+
+echo ""
+
+ldapsearch \
+  -H ldaps://${SMB_HOST} \
+  -D "Administrator@${SAMBA_DC_REALM}" \
+  -w "${SAMBA_DC_ADMIN_PASSWD}" \
+  -b "${realm}" \
+  "(&(objectClass=user))" | grep displayName
+
+echo ""
+
+ldapsearch \
+  -H ldaps://${SMB_HOST} \
+  -D "Administrator@${SAMBA_DC_REALM}" \
+  -w "${SAMBA_DC_ADMIN_PASSWD}" \
+  -b "${realm}" \
+  -z 0 | grep -e "^dn: "
+
+echo ""
 
 if [[ -f ${CSV_FILE} ]]
 then

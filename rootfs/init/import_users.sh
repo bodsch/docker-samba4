@@ -15,13 +15,14 @@ add_user() {
   then
     log_info "add ${username}"
 
-    /usr/bin/samba-tool \
-      user create \
-        ${username} \
-        ${password} \
-        --mail-address="${email}" \
-        --surname="${lastname}" \
-        --given-name="${firstname}"
+    /usr/bin/samba-tool user create \
+      ${username} \
+      ${password} \
+      --configfile=${SAMBA_CONF_FILE} \
+      --debuglevel=${SAMBA_DEBUGLEVEL} \
+      --mail-address="${email}" \
+      --surname="${lastname}" \
+      --given-name="${firstname}"
   fi
 }
 
@@ -38,11 +39,26 @@ check_user() {
 #     -b "CN=Users,${realm}" \
 #     "(&(objectClass=user)(sAMAccountName=${username}))" | grep displayName)
 
-  /usr/bin/samba-tool \
-    user list | grep -c ${username}
+  /usr/bin/samba-tool user list \
+    --configfile=${SAMBA_CONF_FILE} \
+    --debuglevel=${SAMBA_DEBUGLEVEL} \
+    | grep -c ${username}
 }
 
+create_healthcheck_user() {
 
+#  export SAMBA_HEALTH_USER="healthcheck"
+#  export SAMBA_HEALTH_PASS="1bQFxTUUerxY"
+
+  add_user "healthcheck" "1bQFxTUUerxY" "health@smb.lan" "health" "check"
+
+  cat > /.smbclient.conf << EOF
+username=healthcheck
+password=1bQFxTUUerxY
+EOF
+}
+
+user() {
 if [[ -f ${CSV_FILE} ]]
 then
   OLDIFS=$IFS
@@ -54,3 +70,7 @@ then
 
   IFS=$OLDIFS
 fi
+}
+
+create_healthcheck_user
+user

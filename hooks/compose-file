@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Custom build for Docker Hub
+# see: https://medium.com/microscaling-systems/labelling-automated-builds-on-docker-hub-f3d073fb8e1
+
+[[ -e hooks/environment ]] && . hooks/environment
+
+cat << EOF > .env
+
+BUILD_DATE=${BUILD_DATE}
+BUILD_VERSION=${BUILD_VERSION}
+BUILD_TYPE=${BUILD_TYPE}
+
+SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-krazb4re+H5}
+KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-kur-z3rSh1t}
+TEST_USER=true
+
+EOF
+
+
+docker-compose \
+  --file compose/head.yml \
+  --file compose/samba4.yml \
+  config > docker-compose.yml

@@ -1,49 +1,36 @@
 sudo: required
-
 services:
-  - docker
-
+- docker
 env:
   global:
-    - DOCKER_USERNAME=bodsch
-    - BUILD_DATE=$(date +%Y-%m-%d)
-    - BUILD_VERSION=$(date +%y%m)
-    - SAMBA_VERSION=$(./latest_release.sh)
-
+  - DOCKER_USERNAME=bodsch
+  - BUILD_DATE=$(date +%Y-%m-%d)
+  - BUILD_VERSION=$(date +%y%m)
+  - SAMBA_VERSION=$(./hooks/latest_release.sh)
+  - secure: h+5ariBIP9YoA4TxYUAQLdu5p17vgWIXKoyf0NcSHl618n+QTWnuv59qVxdvlBFUZKxW2pCtBK3N5uKKqUxmdk7Hij9GRA4yRUQ+/GhdVRDpkfy6DE3NO8TW8UHZvDIAiClsZpB67jYL2q9ZuJOCoDHubyenlE6ArvtHCG9S6ShZCzYPITdQiq63buHZ6n6gRMTcv6brNsSYXJvwS4q8sXBUaXULoDNei50HJFqK3xrOFvt8NiS3+f0nAzMPEf4aE2PlRXy4PBUevGfDROaxglhEIikv6UBQ+C7kPbucMBUsehI8GmDscKRkcKCKF1CHKEGsQd07PeOGg3ME3c6ZUdC7e8+uGWI7zmtHoR6nJI4G6BRfsdvHyFtD9rSli+HLqGRXO4oXKIMdRhaZfBMq7JquscGfUMcSjUhwLFWNv33iEAlJeqthtnMcN+D5njb6X5W6cpHlSsgkFzjNvc0oyg/4FwEZVBFPhIIEDSRMV/NaI0lIwbRelp2nqwcCv76g6PF8p++1urH4dPBQbpVsiVf1b9A9fsmA7GkyF0K4nYd30s2T/HMRieXBaVCbIMQstTgz3sxBlcSnINBArYiSKS922WsHhnllFOOdPm6awz3agF2J+zZum7Ix6WiGn16SjmUOVG/8UcnjLJAWFHzU9JD6CiEOr3Dggc/b1w3QfjM=
 jobs:
   include:
-    - stage: build
-      script:
-      - make build
-
-    - stage: test
-      script:
-      - make build
-      - |
-        docker run \
-        --detach \
-        --name samba4 \
-        --publish 135:135 \
-        --publish 137:137/udp \
-        --publish 138:138/udp \
-        --publish 139:139 \
-        --publish 389:389 \
-        --publish 389:389/udp \
-        --publish 445:445 \
-        --publish 464:464 \
-        --publish 636:636 \
-        --publish 3268:3268/tcp \
-        --publish 3269:3269/tcp \
-        --env SAMBA_DC_ADMIN_PASSWD="krazb4re+H5" \
-        --env KERBEROS_PASSWORD="kur-z3rSh1t" \
-        --env TEST_USER=true \
-        bodsch/docker-samba4
-      - docker ps | grep -q samba4
-      - make test
-      - docker stop samba4
-
-    - stage: publish
-      script:
-      - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
-      - make release
-      - docker logout
+  - stage: build
+    script:
+    - make
+  - stage: test
+    script:
+    - make compose-file
+    - docker-compose up --build -d
+    - make test
+    - docker-compose down
+  - stage: push latest docker image
+    script:
+    - make
+    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+    - docker tag ${USER}/samba4:latest ${DOCKER_USERNAME}/docker-samba4:latest
+    - docker push ${DOCKER_USERNAME}/docker-samba4:latest
+    - docker logout
+  - stage: push version docker image
+    if: branch = master
+    script:
+    - make
+    - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
+    - docker tag ${USER}/samba4:latest ${DOCKER_USERNAME}/docker-samba4:${SAMBA_VERSION}
+    - docker push ${DOCKER_USERNAME}/docker-samba4:${SAMBA_VERSION}
+    - docker logout
