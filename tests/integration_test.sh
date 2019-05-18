@@ -38,8 +38,6 @@ check_samba4() {
 
 docker ps
 
-set -x
-
 running_containers=$(docker ps | tail -n +2  | wc -l)
 
 if [[ ${running_containers} -eq 1 ]] || [[ ${running_containers} -gt 1 ]]
@@ -51,9 +49,8 @@ then
 
   exit 0
 else
-  echo "please run "
-  echo " make start"
-  echo "before"
+  echo "the container with samba4 does not run"
+
 
   exit 1
 fi
