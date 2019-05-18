@@ -48,17 +48,6 @@ setup() {
 
   [[ -f "${SETUP_LOCK_FILE}" ]] && return
 
-  [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && rm -f /etc/supervisor.d/bind.ini
-
-
-
-  #if [[ -f /etc/openldap/ldap.conf ]]
-  #then
-  #  echo "" >> /etc/openldap/ldap.conf
-  #  echo "TLS_CACERT  /etc/ssl/certs/ca-certificates.crt" >> /etc/openldap/ldap.conf
-  #  echo "TLS_REQCERT ALLOW" >> /etc/openldap/ldap.conf
-  #fi
-
   run_bind() {
 
     [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && return
@@ -242,25 +231,15 @@ start() {
   # samba --interactive --debuglevel=3 --debug-stderr --configfile=/srv/etc/samba/smb.conf
 }
 
-start_supervisor() {
+start_samba() {
 
   log_info "start init process ..."
-
-  # cat ${SAMBA_CONF_FILE}
 
   samba \
     --interactive \
     --debuglevel=${SAMBA_DEBUGLEVEL} \
     --debug-stderr \
     --configfile=${SAMBA_CONF_FILE}
-
-#  if [[ -f /etc/supervisord.conf ]]
-#  then
-#    /usr/bin/supervisord -c /etc/supervisord.conf >> /dev/null
-#  else
-#    log_error "no supervisord.conf found"
-#    exit 1
-#  fi
 }
 
 # -------------------------------------------------------------------------------------------------
@@ -276,7 +255,7 @@ run() {
 
   . /init/import_users.sh
 
-  start_supervisor
+  start_samba
 }
 
 run
