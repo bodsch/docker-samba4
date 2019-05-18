@@ -36,7 +36,9 @@ check_samba4() {
     ${USER}/${DOCKER_IMAGE_NAME}-client
 }
 
+docker ps
 
+set -x
 
 running_containers=$(docker ps | tail -n +2  | wc -l)
 
