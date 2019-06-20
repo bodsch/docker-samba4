@@ -16,8 +16,9 @@ jobs:
   - stage: test
     script:
     - make compose-file
-    - docker-compose up --build -d
-    - sleep 15s
+    - docker-compose build
+    - docker-compose up -d
+    - sleep 20s
     - make test
     - docker-compose down
   - stage: push latest docker image

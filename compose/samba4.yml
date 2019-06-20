@@ -3,6 +3,7 @@ version: '2.1'
 
 services:
   samba4:
+    restart: always
     build:
       context: ..
       dockerfile: Dockerfile
@@ -11,7 +12,6 @@ services:
         - BUILD_VERSION
     container_name: samba4
     hostname: samba4
-    # restart: always
     privileged: true
     ports:
       - 135:135

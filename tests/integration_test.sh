@@ -23,6 +23,7 @@ inspect() {
 
     printf "%-40s - %s\n"  "${c}" "${s}"
   done
+  echo ""
 }
 
 
@@ -30,17 +31,17 @@ check_samba4() {
 
   network=$(docker network ls | egrep "*samba4*" | awk '{print $2}')
 
+  echo "'${network}'"
+
   docker run \
     --link samba4 \
     --network ${network} \
     ${USER}/${DOCKER_IMAGE_NAME}-client
 }
 
-docker ps
+running_containers=$(docker ps | tail -n +2 | egrep -c samba4)
 
-running_containers=$(docker ps | tail -n +2  | wc -l)
-
-if [[ ${running_containers} -eq 1 ]] || [[ ${running_containers} -gt 1 ]]
+if [[ $(docker ps | tail -n +2 | egrep -c samba4) -eq 1 ]]
 then
 
   inspect
@@ -49,8 +50,8 @@ then
 
   exit 0
 else
-  echo "the container with samba4 does not run"
-
+  echo "no running samba4 container found"
+  echo "please run 'make compose-file' and 'docker-compose up --build -d' before"
 
   exit 1
 fi
