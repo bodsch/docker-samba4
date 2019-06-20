@@ -27,11 +27,40 @@ inspect() {
 }
 
 
+wait_for_samba() {
+
+  echo "wait for healthy samba4"
+
+  RETRY=40
+  until [[ ${RETRY} -le 0 ]]
+  do
+    d=$(docker ps | tail -n +2 | egrep samba4 | awk '{print($1)}')
+
+    s=$(docker inspect --format '{{json .State.Health }}' ${d} | jq --raw-output .Status)
+
+    # echo "'${s}'"
+
+    if [[ "${s}" = "healthy" ]]
+    then
+      break
+    else
+      sleep 5s
+      RETRY=$(expr ${RETRY} - 1)
+    fi
+  done
+
+  if [[ $RETRY -le 0 ]]
+  then
+    echo "could not found an healthy samba4"
+    exit 1
+  fi
+  echo ""
+}
+
+
 check_samba4() {
 
   network=$(docker network ls | egrep "*samba4*" | awk '{print $2}')
-
-  echo "'${network}'"
 
   docker run \
     --link samba4 \
@@ -45,6 +74,8 @@ if [[ $(docker ps | tail -n +2 | egrep -c samba4) -eq 1 ]]
 then
 
   inspect
+
+  wait_for_samba
 
   check_samba4
 
