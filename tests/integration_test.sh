@@ -52,6 +52,9 @@ wait_for_samba() {
   if [[ $RETRY -le 0 ]]
   then
     echo "could not found an healthy samba4"
+
+    inspect
+
     exit 1
   fi
   echo ""
