@@ -40,10 +40,9 @@ RUN \
     /tmp/* \
     /var/cache/apk/*
 
-#COPY --from=builder /usr/local /usr/local
 COPY rootfs/ /
 
-VOLUME [ "/etc/samba" "/var/lib/samba" ]
+VOLUME [ "/srv" "/etc/samba" "/var/lib/samba" ]
 
 CMD ["/init/run.sh"]
 

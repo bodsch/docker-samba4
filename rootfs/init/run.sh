@@ -14,18 +14,18 @@ SAMBA_DC_REALM=${SAMBA_DC_REALM:-MATRIX.LAN}
 SAMBA_DC_DNS_BACKEND=${SAMBA_DC_DNS_BACKEND:-SAMBA_INTERNAL}
 
 SAMBA_DEBUGLEVEL=${SAMBA_DEBUGLEVEL:-0}
+SAMBA_PROVISION_DEBUGLEVEL=${SAMBA_PROVISION_DEBUGLEVEL:-0}
 
 SAMBA_TARGET_DIR=${SAMBA_TARGET_DIR:-/srv}
 
-SAMBA_CONF_FILE="/srv/etc/smb.conf"
+SAMBA_CONF_FILE="${SAMBA_TARGET_DIR}/etc/smb.conf"
 
-# SAMBA_DC_DNS_BACKEND=BIND9_FLATFILE
 
 SAMBA_OPTIONS=${SAMBA_OPTIONS:-}
 
 [[ -n "${SAMBA_HOST_IP}" ]] && SAMBA_OPTIONS="${SAMBA_OPTIONS} --host-ip=${SAMBA_HOST_IP}"
 
-SETUP_LOCK_FILE="/srv/etc/.setup.lock.do.not.remove"
+SETUP_LOCK_FILE="${SAMBA_TARGET_DIR}/etc/.setup.lock.do.not.remove"
 
 pass=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c20; echo)
 
@@ -41,53 +41,48 @@ export SAMBA_DC_REALM
 export HOSTNAME
 export SETUP_LOCK_FILE
 
-
 # -------------------------------------------------------------------------------------------------
+
+finish() {
+  rv=$?
+  log_INFO "exit with signal '${rv}'"
+
+  if [[ ${rv} -gt 0 ]]
+  then
+    sleep 4s
+  fi
+
+  if [[ "${DEBUG}" = "true" ]]
+  then
+    caller
+  fi
+
+  log_info ""
+
+  exit ${rv}
+}
+
+trap finish SIGINT SIGTERM INT TERM EXIT
+
 
 setup() {
 
   [[ -f "${SETUP_LOCK_FILE}" ]] && return
 
-  run_bind() {
-
-    [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && return
-
-    chmod +rw /var/log/named/
-
-    /usr/sbin/named -c /etc/bind/named.conf -u named -f -g &
-
-    sleep 2
-  }
-
-  kill_bind() {
-
-    [[ ${SAMBA_DC_DNS_BACKEND} == SAMBA_INTERNAL ]] && return
-
-    pid=$(ps ax | grep named | grep -v grep | awk '{print $1}')
-
-    if [[ ! -z "${pid}" ]]
-    then
-      kill -9 ${pid}
-      sleep 2s
-    fi
-  }
-
   # Configure the AD DC
   if [[ ! -f "${SAMBA_CONF_FILE}" ]]
   then
     mkdir -p \
-      /srv/etc \
-      /srv/lib \
-      /srv/log
+      ${SAMBA_TARGET_DIR}/etc \
+      ${SAMBA_TARGET_DIR}/lib \
+      ${SAMBA_TARGET_DIR}/log
 
     if [[ -d /var/lib/krb5kdc ]]
     then
       rm -rf /var/lib/krb5kdc
-      [[ -d /srv/krb5kdc ]] || mkdir /srv/krb5kdc
+      [[ -d ${SAMBA_TARGET_DIR}/krb5kdc ]] || mkdir ${SAMBA_TARGET_DIR}/krb5kdc
       ln -sf ${SAMBA_TARGET_DIR}/krb5kdc /var/lib/krb5kdc
     fi
-
-    run_bind
 
     log_info "${SAMBA_DC_DOMAIN} - Begin Domain Provisioning"
 
@@ -100,7 +95,7 @@ setup() {
       --adminpass=${SAMBA_DC_ADMIN_PASSWD} \
       --dns-backend=${SAMBA_DC_DNS_BACKEND} \
       --targetdir=${SAMBA_TARGET_DIR} \
-      --debuglevel=${SAMBA_DEBUGLEVEL}
+      --debuglevel=${SAMBA_PROVISION_DEBUGLEVEL}
 
     result=$?
 
@@ -131,7 +126,7 @@ EOF
     samba-tool domain exportkeytab \
       ${SAMBA_TARGET_DIR}/etc/krb5.keytab \
       --configfile=${SAMBA_CONF_FILE} \
-      --debuglevel=${SAMBA_DEBUGLEVEL} \
+      --debuglevel=${SAMBA_PROVISION_DEBUGLEVEL} \
       --principal ${HOSTNAME}\$
 
     # add dns-forwarder if required
@@ -189,8 +184,6 @@ EOF
     # Mark samba as setup
     touch "${SETUP_LOCK_FILE}"
 
-    kill_bind
-
     # smbd -b | egrep "LOCKDIR|STATEDIR|CACHEDIR|PRIVATE_DIR"
     # smbclient -L localhost -U% --configfile=/srv/etc/samba/smb.conf
     # smbclient //localhost/netlogon -UAdministrator -c 'ls' --configfile=/srv/etc/samba/smb.conf
@@ -219,14 +212,6 @@ start() {
   #  cp -a /srv/krb5kdc   /var/lib/
   #  cp -a /srv/etc/krb5* /etc/
   #fi
-
-  if [[ ! "${SAMBA_DC_DNS_BACKEND}" = "SAMBA_INTERNAL" ]]
-  then
-    [[ -d /var/log/named ]] || mkdir -p /var/log/named
-
-    chown -Rv named: /var/bind /etc/bind /var/run/named /var/log/named
-    chmod -Rv o-rwx  /var/bind /etc/bind /var/run/named /var/log/named
-  fi
 
   # samba --interactive --debuglevel=3 --debug-stderr --configfile=/srv/etc/samba/smb.conf
 }
