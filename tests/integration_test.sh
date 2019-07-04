@@ -43,6 +43,11 @@ wait_for_samba() {
     if [[ "${s}" = "healthy" ]]
     then
       break
+    elif [[ "${s}" = "unhealthy" ]]
+    then
+      docker logs --details ${d}
+
+      exit 1
     else
       sleep 5s
       RETRY=$(expr ${RETRY} - 1)

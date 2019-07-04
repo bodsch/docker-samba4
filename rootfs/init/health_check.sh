@@ -2,8 +2,7 @@
 
 bootstrap="/srv/etc/.setup.lock.do.not.remove"
 
-set -eo pipefail
-
+# set -eo pipefail
 
 while true
 do
