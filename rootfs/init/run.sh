@@ -235,6 +235,7 @@ start_samba() {
 
   log_info "start init process ..."
 
+set -x
   samba \
     --interactive \
     --debuglevel=${SAMBA_DEBUGLEVEL} \

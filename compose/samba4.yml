@@ -29,6 +29,7 @@ services:
       - SAMBA_DC_ADMIN_PASSWD
       - KERBEROS_PASSWORD
       - TEST_USER
+      - SAMBA_DEBUGLEVEL
     cap_add:
       - NET_ADMIN
       - SYS_ADMIN
