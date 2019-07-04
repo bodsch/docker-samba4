@@ -3,6 +3,7 @@ FROM alpine:3.9
 
 EXPOSE 135 137/udp 138/udp 139 389 389/udp 445 464 636 3268 3269
 
+ARG VCS_REF
 ARG BUILD_DATE
 ARG BUILD_VERSION
 ARG SAMBA_VERSION
@@ -42,14 +43,14 @@ RUN \
 
 COPY rootfs/ /
 
-VOLUME [ "/srv" "/etc/samba" "/var/lib/samba" ]
+VOLUME ["/srv" "/etc/samba" "/var/lib/samba"]
 
 CMD ["/init/run.sh"]
 
 HEALTHCHECK \
   --interval=5s \
   --timeout=10s \
-  --retries=10 \
+  --retries=4 \
   CMD /init/health_check.sh
 
 # ---------------------------------------------------------------------------------------
@@ -62,6 +63,7 @@ LABEL \
   org.label-schema.description="Inofficial Samba4 Docker Image" \
   org.label-schema.url="https://www.samba.org/" \
   org.label-schema.vcs-url="https://github.com/bodsch/docker-samba4" \
+  org.label-schema.vcs-ref=${VCS_REF} \
   org.label-schema.vendor="Bodo Schulz" \
   org.label-schema.version=${SAMBA_VERSION} \
   org.label-schema.schema-version="1.0" \

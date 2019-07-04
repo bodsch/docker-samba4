@@ -1,6 +1,4 @@
 
-[[ "${TEST_USER}" != "true" ]] && return
-
 CSV_FILE="/init/build/import_users.csv"
 
 add_user() {
@@ -13,13 +11,12 @@ add_user() {
 
   if [[ $(check_user ${username}) -eq 0 ]]
   then
-    log_info "add ${username}"
+    log_info "add user '${username}'"
 
     /usr/bin/samba-tool user create \
       ${username} \
       ${password} \
       --configfile=${SAMBA_CONF_FILE} \
-      --debuglevel=${SAMBA_DEBUGLEVEL} \
       --mail-address="${email}" \
       --surname="${lastname}" \
       --given-name="${firstname}"
@@ -41,7 +38,6 @@ check_user() {
 
   /usr/bin/samba-tool user list \
     --configfile=${SAMBA_CONF_FILE} \
-    --debuglevel=${SAMBA_DEBUGLEVEL} \
     | grep -c ${username}
 }
 
@@ -59,18 +55,22 @@ EOF
 }
 
 user() {
-if [[ -f ${CSV_FILE} ]]
-then
-  OLDIFS=$IFS
-  IFS=";"
-  sed -e '/^#/ d' -e '/^;/ d'  -e '/^ *$/ d' ${CSV_FILE} | while read username email firstname lastname password
-  do
-    add_user "${username}" "${password}" "${email}" "${firstname}" "${lastname}"
-  done
 
-  IFS=$OLDIFS
-fi
+  if [[ -f ${CSV_FILE} ]]
+  then
+    OLDIFS=$IFS
+    IFS=";"
+    sed -e '/^#/ d' -e '/^;/ d'  -e '/^ *$/ d' ${CSV_FILE} | while read username email firstname lastname password
+    do
+      add_user "${username}" "${password}" "${email}" "${firstname}" "${lastname}"
+    done
+
+    IFS=$OLDIFS
+  fi
 }
 
 create_healthcheck_user
+
+[[ "${TEST_USER}" != "true" ]] && return
+
 user

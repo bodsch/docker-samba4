@@ -9,6 +9,8 @@ set -e
 
 HOSTNAME=$(hostname -f)
 
+SAMBA_PROCESS_MODEL=${SAMBA_PROCESS_MODEL:-prefork}
+
 SAMBA_DC_DOMAIN=${SAMBA_DC_DOMAIN:-smb}
 SAMBA_DC_REALM=${SAMBA_DC_REALM:-MATRIX.LAN}
 SAMBA_DC_DNS_BACKEND=${SAMBA_DC_DNS_BACKEND:-SAMBA_INTERNAL}
@@ -32,8 +34,8 @@ pass=$(< /dev/urandom tr -dc A-Z-a-z-0-9 | head -c20; echo)
 SAMBA_DC_ADMIN_PASSWD=${SAMBA_DC_ADMIN_PASSWD:-${pass}}
 KERBEROS_PASSWORD=${KERBEROS_PASSWORD:-${pass}}
 
-log_debug "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
-log_debug "Kerberos password set to: $KERBEROS_PASSWORD"
+#log_debug "Samba password set to   : $SAMBA_DC_ADMIN_PASSWD"
+#log_debug "Kerberos password set to: $KERBEROS_PASSWORD"
 
 # we need the export for kdb5_util
 export KERBEROS_PASSWORD
@@ -191,10 +193,10 @@ EOF
   fi
 }
 
-start() {
+prepare() {
 
-  log_info "use '${SAMBA_DC_ADMIN_PASSWD}' as DC admin password"
-  log_info "use '${KERBEROS_PASSWORD}' as kerberos password"
+  log_debug "use '${SAMBA_DC_ADMIN_PASSWD}' as DC admin password"
+  log_debug "use '${KERBEROS_PASSWORD}' as kerberos password"
 
   # Fix nameserver
   echo -e "search ${SAMBA_DC_REALM}\nnameserver 127.0.0.1" > /etc/resolv.conf
@@ -220,12 +222,29 @@ start_samba() {
 
   log_info "start init process ..."
 
-set -x
-  samba \
-    --interactive \
-    --debuglevel=${SAMBA_DEBUGLEVEL} \
-    --debug-stderr \
-    --configfile=${SAMBA_CONF_FILE}
+  samba_opts=
+  samba_opts="${samba_opts} --configfile=${SAMBA_CONF_FILE}"
+  samba_opts="${samba_opts} --model=${SAMBA_PROCESS_MODEL}"
+  samba_opts="${samba_opts} --interactive"
+
+  if [[ ${SAMBA_DEBUGLEVEL} -gt 0 ]]
+  then
+    samba_opts="${samba_opts} --leak-report"
+    samba_opts="${samba_opts} --leak-report-full"
+    samba_opts="${samba_opts} --debuglevel=${SAMBA_DEBUGLEVEL}"
+    samba_opts="${samba_opts} --debug-stderr"
+  fi
+
+  samba ${samba_opts}
+#set -x
+#  samba \
+#    --configfile=${SAMBA_CONF_FILE} \
+#    --model=${SAMBA_PROCESS_MODEL} \
+#    --leak-report \
+#    --leak-report-full \
+#    --debuglevel=${SAMBA_DEBUGLEVEL} \
+#    --debug-stderr \
+#    --interactive
 }
 
 # -------------------------------------------------------------------------------------------------
@@ -237,7 +256,7 @@ run() {
 
   setup
 
-  start
+  prepare
 
   . /init/import_users.sh
 
